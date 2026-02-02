@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>student result calculator - Ultimate Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body{font-family:Segoe UI,sans-serif;margin:0;background:#fff;display:flex;justify-content:center;padding:20px 0;color:#333;transition:0.3s;}
+.box{width:95%;max-width:900px;background:#f9f9f9;border-radius:15px;padding:25px;display:none;box-sizing:border-box;box-shadow:0 4px 15px rgba(0,0,0,0.1);transition:0.3s;}
+.box h2{text-align:center;margin-bottom:20px;font-weight:600;color:#222;}
+.input-group{display:flex;gap:10px;margin-bottom:15px;flex-wrap:wrap;}
+.input-group input{flex:1;padding:12px;border:1px solid #ccc;border-radius:8px;background:#fff;color:#333;}
+.button-group{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px;justify-content:center;}
+button{flex:1 1 150px;padding:10px;border:none;border-radius:8px;font-weight:bold;cursor:pointer;transition:0.2s;color:#fff;}
+button:hover{opacity:0.9;}
+
+/* Professional colors */
+.authBtn{background:#1a73e8;} /* Login / Signup / Logout */
+.add,.remove{background:#16a085;} /* Add / Remove subject */
+.calc{background:#3498db;} 
+.reset{background:#f39c12;} 
+.setMaxBtn{background:#e67e22;} 
+.clearHistory{background:#e74c3c;} 
+.copyBtn{background:#8e44ad;} 
+
+.subjects-box{margin-bottom:20px;display:flex;flex-direction:column;gap:8px;}
+.subjectRow{display:flex;gap:10px;}
+.subjectRow input{flex:1;padding:8px;border-radius:6px;border:1px solid #ccc;background:#fff;color:#333;}
+.result-box{background:#fff;color:#222;padding:12px;border-radius:10px;margin-bottom:15px;font-weight:bold;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,0.05);}
+.progress{height:14px;background:#ddd;border-radius:10px;margin:8px 0;}
+.bar{height:100%;width:0%;border-radius:10px;background:green;transition:0.4s;}
+.history-box{background:#f0f0f0;padding:10px;border-radius:8px;max-height:200px;overflow:auto;margin-bottom:10px;font-size:13px;box-shadow:inset 0 0 5px rgba(0,0,0,0.05);}
+.topper{border:3px solid gold;}
+@media(max-width:700px){.subjectRow{flex-direction:column;}.button-group button{flex:1 1 100%;}.input-group input{flex:1 1 100%;}}
+</style>
+</head>
+<body>
+
+<!-- Signup -->
+<div class="box" id="signupBox">
+<h2>Sign Up</h2>
+<div class="input-group">
+<input id="suUser" placeholder="Name or Email">
+<input id="suPass" type="password" placeholder="Password">
+</div>
+<div class="button-group">
+<button class="authBtn" onclick="signup()">Create Account</button>
+<button class="authBtn" onclick="showLogin()">Login Account</button>
+</div>
+<div id="suMsg" style="color:red;text-align:center;"></div>
+</div>
+
+<!-- Login -->
+<div class="box" id="loginBox">
+<h2>Login</h2>
+<div class="input-group">
+<input id="liUser" placeholder="Name or Email">
+<input id="liPass" type="password" placeholder="Password">
+</div>
+<div class="button-group">
+<button class="authBtn" onclick="login()">LOGIN</button>
+<button class="authBtn" onclick="showSignup()">CREATE ACCOUNT</button>
+</div>
+<div id="liMsg" style="color:red;text-align:center;"></div>
+</div>
+
+<!-- App -->
+<div class="box" id="appBox">
+<h2>STUDENT RESULT APPLICATION</h2>
+
+<div class="input-group">
+<input id="studentName" placeholder="Student Name">
+<input id="rollNo" placeholder="Roll No (Optional)">
+</div>
+
+<div class="input-group">
+<input id="maxSubInput" type="number" placeholder="Set Max Subjects (0=unlock)">
+<button class="setMaxBtn" onclick="setMaxSubjects()">SET / UNLOCK</button>
+</div>
+
+<div class="subjects-box" id="subjects"></div>
+
+<div class="button-group">
+<button class="add" onclick="addSubject()"> ADD SUBJECT</button>
+<button class="remove" onclick="removeLastSubject()">REMOVE SUBJECT</button>
+<button class="calc" onclick="calculate()">CALCULATE</button>
+<button class="reset" onclick="resetAll()">CANCEL</button>
+<button class="authBtn" onclick="logout()">LOGOUT</button>
+<button class="copyBtn" onclick="copyHistory()">COPY HISTORY</button>
+</div>
+
+<div class="result-box" id="resultBox">
+<div class="progress"><div class="bar" id="bar"></div></div>
+<div id="output"></div>
+</div>
+
+<div class="history-box" id="historyBox"></div>
+<button class="clearHistory" onclick="clearHistory()">CLEAR HISTORY</button>
+<div class="credit" style="text-align:center;font-size:12px;opacity:0.8;">Developed by Md Wali Ahmad / MANUU POLYTECHNIC BANGLORE CAMPUS 🎓</div>
+</div>
+
+<script>
+const signupBox=document.getElementById("signupBox");
+const loginBox=document.getElementById("loginBox");
+const appBox=document.getElementById("appBox");
+const subjectsDiv=document.getElementById("subjects");
+const output=document.getElementById("output");
+const bar=document.getElementById("bar");
+const historyBox=document.getElementById("historyBox");
+const resultBox=document.getElementById("resultBox");
+
+let currentUser=null;
+let maxSubjects=5;
+
+function showSignup(){signupBox.style.display="block";loginBox.style.display="none";appBox.style.display="none";}
+function showLogin(){loginBox.style.display="block";signupBox.style.display="none";appBox.style.display="none";}
+
+window.onload=function(){
+ if(localStorage.getItem("sessionUser")){
+   currentUser=localStorage.getItem("sessionUser");
+   loadUserData();
+   showApp();
+ } else showLogin();
+}
+
+function signup(){
+ let u=suUser.value.trim(),p=suPass.value.trim();
+ if(!u||!p){suMsg.innerHTML="Fill all fields"; return;}
+ localStorage.setItem("user_"+u,p);
+ suMsg.innerHTML="Account Created ✅";
+}
+function login(){
+ let u=liUser.value.trim(),p=liPass.value.trim();
+ if(localStorage.getItem("user_"+u)===p){
+   currentUser=u;
+   localStorage.setItem("sessionUser",u);
+   loginBox.style.display="none";
+   loadUserData();
+   showApp();
+ } else liMsg.innerHTML="Wrong ❌";
+}
+function logout(){
+ localStorage.removeItem("sessionUser");
+ hideApp();
+ showLogin();
+}
+
+function showApp(){signupBox.style.display="none";loginBox.style.display="none";appBox.style.display="block";}
+function hideApp(){appBox.style.display="none";}
+
+function loadUserData(){
+  let maxSub=localStorage.getItem("maxSubjects_"+currentUser);
+  maxSubjects=maxSub!==null?parseInt(maxSub):0;
+  subjectsDiv.innerHTML="";
+  addSubject();
+  showHistory();
+}
+
+function setMaxSubjects(){
+  let val=parseInt(document.getElementById("maxSubInput").value);
+  if(isNaN(val)||val<0){alert("Enter valid number!"); return;}
+  maxSubjects=val;
+  localStorage.setItem("maxSubjects_"+currentUser,maxSubjects);
+  adjustSubjectsLock();
+}
+
+function adjustSubjectsLock(){
+  if(maxSubjects>0){
+    while(subjectsDiv.children.length>maxSubjects){
+      subjectsDiv.removeChild(subjectsDiv.lastChild);
+    }
+  }
+}
+
+function addSubject(){
+  if(maxSubjects>0 && subjectsDiv.children.length>=maxSubjects){alert("Maximum "+maxSubjects+" subjects reached!"); return;}
+  let row=document.createElement("div");
+  row.className="subjectRow";
+  let subName=document.createElement("input");
+  subName.placeholder="Subject Name (Optional)";
+  let marks=document.createElement("input");
+  marks.placeholder="Marks";
+  marks.type="number";marks.min=0;marks.max=100;
+  row.appendChild(subName);row.appendChild(marks);
+  subjectsDiv.appendChild(row);
+}
+
+function removeLastSubject(){
+  if(maxSubjects>0){alert("Cannot remove subject when max subjects lock is active!"); return;}
+  if(subjectsDiv.children.length>1) subjectsDiv.removeChild(subjectsDiv.lastChild);
+}
+
+function resetAll(){
+  studentName.value=""; rollNo.value="";
+  subjectsDiv.innerHTML=""; addSubject();
+  output.innerHTML=""; bar.style.width="0%";
+  resultBox.classList.remove("topper");
+}
+
+function calculate(){
+ let name=studentName.value.trim();
+ let roll=rollNo.value.trim();
+ if(!name){output.innerHTML="Enter student name!";return;}
+
+ let histKey="historyPro_"+currentUser;
+ let history=JSON.parse(localStorage.getItem(histKey)||"[]");
+
+ // Duplicate check
+ if(history.some(s=>s.name===name && s.roll===roll)){
+   alert("Already calculated for this student!");
+   return;
+ }
+
+ let rows=document.querySelectorAll(".subjectRow");
+ let total=0,c=0,details=[];
+ for(let i=0;i<rows.length;i++){
+   let r=rows[i];
+   let n=r.children[0].value.trim();
+   let m=r.children[1].value.trim();
+
+   if(n && m===""){alert(`Enter marks for subject: ${n}`); return;}
+   if(m!==""){total+=+m;c++;details.push((n?n:"Subject "+(i+1))+" : "+m);}
+ }
+
+ if(c===0){output.innerHTML="Enter marks!";return;}
+
+ let per=(total/(c*100))*100;
+ let grade=per>=90?"A+":per>=75?"A":per>=60?"B":per>=50?"C":per>=35?"D":"F";
+ let msg=per>=90?"🏆 Excellent":per>=75?"Very Good":per>=60?"Good":per>=40?"Need Improvement":"Study Hard";
+
+ resultBox.classList.toggle("topper",per>=90);
+
+ output.innerHTML=`<b>${name}</b> ${roll?"| Roll: "+roll:""}<br><br>${details.join("<br>")}<br><br>
+ Total: ${total}<br>Percentage: ${per.toFixed(2)}%<br>Grade: ${grade}<br>${msg}`;
+
+ bar.style.width=per+"%";
+ bar.style.background=per>=35?"green":"red";
+
+ history.push({name,roll,per:per.toFixed(2),grade});
+ localStorage.setItem(histKey,JSON.stringify(history));
+ showHistory();
+}
+
+function showHistory(){
+ let histKey="historyPro_"+currentUser;
+ let history=JSON.parse(localStorage.getItem(histKey)||"[]");
+ historyBox.innerHTML="<b>History</b><br>";
+ history.forEach((s,i)=>{
+   historyBox.innerHTML+=`${i+1}. ${s.name} ${s.roll?"| "+s.roll:""} - ${s.per}% (${s.grade})<br>`;
+ });
+}
+
+function clearHistory(){
+ localStorage.removeItem("historyPro_"+currentUser);
+ showHistory();
+}
+
+function copyHistory(){
+ let histKey="historyPro_"+currentUser;
+ let history=JSON.parse(localStorage.getItem(histKey)||"[]");
+ if(history.length===0){alert("No history");return;}
+ let text="Student Result History\n\n";
+ history.forEach((s,i)=>{text+=(i+1)+". "+s.name+" "+(s.roll||"")+" - "+s.per+"% ("+s.grade+")\n";});
+ let temp = document.createElement("textarea");
+ temp.value = text;
+ document.body.appendChild(temp);
+ temp.select();
+ document.execCommand("copy");
+ document.body.removeChild(temp);
+ alert("History Copied!");
+}
+</script>
+</body>
+</html>
